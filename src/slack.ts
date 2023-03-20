@@ -1,10 +1,6 @@
-import axios from 'axios';
+import {WebClient, ChatPostMessageArguments} from '@slack/web-api';
 
-type SlackPayload = {
-  text: string;
-  channel: string;
-  thread_ts: string;
-};
+const web = new WebClient(process.env.BOT_USER_TOKEN);
 
 export const postMessage = async (
   message: string,
@@ -12,17 +8,18 @@ export const postMessage = async (
   channel: string,
   thread: string
 ) => {
-  const payload: SlackPayload = {
+  const payload: ChatPostMessageArguments = {
     text: `<@${user}> ${message}`,
     channel: channel,
     thread_ts: thread,
   };
+  web.chat.postMessage(payload);
+};
 
-  const headers = {
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.BOT_USER_TOKEN}`,
-    },
-  };
-  axios.post('https://slack.com/api/chat.postMessage', payload, headers);
+export const getReplies = async (channel: string, ts: string) => {
+  return await web.conversations.replies({
+    channel,
+    ts,
+    include_all_metadata: false,
+  });
 };
