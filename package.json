@@ -1,34 +1,32 @@
 {
-  "name": "chatgpt-slack-gcp",
+  "name": "chatgptbot",
   "version": "1.0.0",
   "description": "",
-  "main": "build/src/index.js",
-  "types": "build/src/index.d.ts",
-  "files": [
-    "build/src"
-  ],
-  "license": "MIT",
-  "keywords": [],
+  "main": "index.js",
   "scripts": {
-    "start": "functions-framework --source=build/src/ --slackChatGPT",
-    "lint": "gts lint",
-    "clean": "gts clean",
-    "compile": "tsc",
-    "fix": "gts fix",
-    "prepare": "yarn compile",
-    "pretest": "yarn compile",
-    "posttest": "yarn lint",
-    "deploy": "gcloud functions deploy slackChatGPT --runtime nodejs12 --trigger-http --region asia-northeast1 --env-vars-file env.yml --entry-point slackChatGPT"
+    "build": "rollup --config --bundleConfigAsCjs"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@slack/bolt": "^3.12.2",
+    "axios": "^1.3.4",
+    "openai": "^3.2.1"
   },
   "devDependencies": {
-    "@types/node": "14.11.2",
-    "gts": "3.1.1",
-    "typescript": "4.7.4"
+    "@rollup/plugin-commonjs": "^24.0.1",
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "@rollup/plugin-replace": "^5.0.2",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "dotenv": "^16.0.3",
+    "rollup": "^3.20.2",
+    "rollup-plugin-dotenv": "^0.4.1",
+    "tslib": "^2.5.0",
+    "typescript": "^5.0.2"
   },
-  "dependencies": {
-    "@google-cloud/functions-framework": "3.1.3",
-    "@slack/web-api": "6.8.1",
-    "axios": "1.3.4",
-    "openai": "3.2.1"
+  "volta": {
+    "node": "18.16.0",
+    "npm": "8.19.3"
   }
 }

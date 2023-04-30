@@ -1,34 +1,15 @@
 # chatgpt-slack-gcp
-ChatGPT adapter for Slack, on google cloud functions
+2023/4/30現在、連携れず停滞中
 
-# initialize
+##　実装の参考にしたサイト
+- Node.jsの実装やslacj apiの設定
+https://qiita.com/Yuki_Oshima/items/112e69df63df9958709f
 
-yarn
+- SlackBolt
+https://slack.dev/bolt-js/ja-jp/deployments/aws-lambda#set-up-aws-lambda
 
-# deployment
+- AWS lambdaの実装
+https://qiita.com/melty_go/items/a6929b0a341e75d24f01
 
-first of all, initialize your gcloud cli config
-copy `env.tmpl.yml` to `env.yml` and replace slack and openapi tokens.
+このあたりで実装できるのが理想だが・・・
 
-modify character config.
-It is assumed to be used like a `env.tmpl.yml`, but please devise it as you like.
-`PROMPT_PREFIX` is prefix of prompt.
-`CHARACTER_CONFIG` is inserted into `system` prompt of ChatGPT API.
-
-run `yarn deploy`
-
-# usage
-
-access [slack app](https://api.slack.com/apps) and Create New App from scratch.
-
-issue Bot User OAuth Token.
-
-add Bot Token Scopes to execute slack bot App
-
-`app_mentions:read`
-`chat:write`
-`channels:history`
-`groups:history`
-
-Enable Event Subscriptions.
-Set the URL deployed to GCP Cloud Functions as the request URL.

@@ -1,77 +1,99 @@
-import type {HttpFunction} from '@google-cloud/functions-framework/build/src/functions';
-import {askToAI} from './chatgpt';
-import {postMessage, getReplies} from './slack';
-import {ChatCompletionRequestMessage} from 'openai';
+import {App, AwsLambdaReceiver} from '@slack/bolt';
+import {
+  AwsCallback,
+  AwsEvent,
+} from '@slack/bolt/dist/receivers/AwsLambdaReceiver';
+import {isAxiosError} from 'axios';
+import {ChatCompletionRequestMessage, Configuration, OpenAIApi} from 'openai';
 
-type Payload = {
-  challenge?: string;
-  type?: string;
-  event?: SlackEvent;
-  authorizations: Authorization[];
-};
+if (!process.env.SLACK_SIGNING_SECRET) process.exit(1);
 
-type SlackEvent = {
-  text: string;
-  type: string;
-  ts: string;
-  thread_ts: string;
-  event_ts: string;
-  channel: string;
-  user: string;
-};
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
 
-type Authorization = {
-  user_id: string;
-};
+const awsLambdaReceiver = new AwsLambdaReceiver({
+  signingSecret: process.env.SLACK_SIGNING_SECRET,
+});
+const app = new App({
+  token: process.env.SLACK_BOT_TOKEN,
+  receiver: awsLambdaReceiver,
+});
 
-export const slackChatGPT: HttpFunction = (req, res) => {
-  const payload: Payload = req.body;
+const bot_userid = '...';
 
-  if (payload.type === 'url_verification') {
-    res.status(200).json({challenge: payload.challenge});
+app.event('app_mention', async ({event, context, client, say}) => {
+  if (context.retryNum) {
+    console.log(`skipped retry. retryReason: ${context.retryReason}`);
     return;
   }
-
-  const postChatGPTAnswer = async () => {
-    if (
-      !payload.event ||
-      payload.event.type !== 'app_mention' ||
-      !payload.event.text
-    )
-      return;
-    const prompts = await buildPromptsFromSlackMessage(payload);
-    const reply = await askToAI(prompts);
-    if (!reply) return;
-    postMessage(
-      reply,
-      payload.event.user,
-      payload.event.channel,
-      payload.event.event_ts
-    );
-  };
-  postChatGPTAnswer();
-  res.status(200).send('OK');
-};
-
-const buildPromptsFromSlackMessage = async (
-  payload: Payload
-): Promise<ChatCompletionRequestMessage[]> => {
-  if (
-    !payload.event ||
-    payload.event.type !== 'app_mention' ||
-    !payload.event.text
-  )
-    return [];
-  const prompts: ChatCompletionRequestMessage[] = [];
-  const ts = payload.event.thread_ts || payload.event.ts;
-  const replies = await getReplies(payload.event.channel, ts);
-  const botID = payload.authorizations[0].user_id;
-  replies.messages?.forEach(message => {
-    const role = message.user === botID ? 'assistant' : 'user';
-    prompts.push({
-      role: role,
-      content: message.text?.replace(/<@.*>/, '') || '',
+  console.log(event);
+  try {
+    const {channel, thread_ts, event_ts} = event;
+    const threadTs = thread_ts ?? event_ts;
+    await say({
+      channel,
+      thread_ts: threadTs,
+      text: '`system` 処理中……',
     });
-  });
-  return prompts;
+    try {
+      const threadResponse = await client.conversations.replies({
+        channel,
+        ts: threadTs,
+      });
+      const chatCompletionRequestMessage: ChatCompletionRequestMessage[] = [];
+      threadResponse.messages?.forEach(message => {
+        const {text, user} = message;
+        if (!text) return;
+        if (user && user === bot_userid) {
+          if (!text.startsWith('`system`')) {
+            chatCompletionRequestMessage.push({
+              role: 'assistant',
+              content: text,
+            });
+          }
+        } else {
+          chatCompletionRequestMessage.push({
+            role: 'user',
+            content: text.replace(`<@${bot_userid}>`, '') ?? '',
+          });
+        }
+      });
+      const completion = await openai.createChatCompletion({
+        model: 'gpt-3.5-turbo',
+        messages: chatCompletionRequestMessage,
+      });
+      const outputText = completion.data.choices
+        .map(({message}) => message?.content)
+        .join('');
+      await client.chat.postMessage({
+        channel,
+        thread_ts: threadTs,
+        text: outputText,
+      });
+    } catch (error) {
+      if (isAxiosError(error)) {
+        console.error(error.response?.data);
+      } else {
+        console.error(error);
+      }
+      await client.chat.postMessage({
+        channel,
+        thread_ts: threadTs,
+        text: '`system` エラーが発生しました。(管理人: <@...>)',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+module.exports.handler = async (
+  event: AwsEvent,
+  context: unknown,
+  callback: AwsCallback
+) => {
+  const handler = await awsLambdaReceiver.start();
+  return handler(event, context, callback);
 };
