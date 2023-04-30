@@ -89,11 +89,18 @@ app.event('app_mention', async ({event, context, client, say}) => {
   }
 });
 
-module.exports.handler = async (
-  event: AwsEvent,
-  context: unknown,
-  callback: AwsCallback
-) => {
+module.exports.handler = async (event: AwsEvent, context: unknown, callback: AwsCallback) => {
+  if (event.httpMethod === 'POST' && event.body) {
+    const body = JSON.parse(event.body);
+
+    if (body.type === 'url_verification') {
+      return {
+        statusCode: 200,
+        body: body.challenge,
+      };
+    }
+  }
+
   const handler = await awsLambdaReceiver.start();
   return handler(event, context, callback);
 };
