@@ -1,8 +1,8 @@
 # chatgpt-slack-gcp
 2023/4/30現在、連携れず停滞中
 
-##　実装の参考にしたサイト
-- Node.jsの実装やslacj apiの設定
+## 実装の参考にしたサイト
+- Node.jsの実装やslack apiの設定
 https://qiita.com/Yuki_Oshima/items/112e69df63df9958709f
 
 - SlackBolt
