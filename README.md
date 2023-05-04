@@ -5,22 +5,22 @@ gcp となっているが、当初使用する予定だった gcp ではなく�
 
 ## 実装手順
 
-1️ Slack App を作成し、SLACK_SIGNING_SECRET と SLACK_BOT_TOKEN を取得したものを環境変数に設定する。
-2 OPENAI_API_KEY を取得し、環境変数に設定する。
-3 npm install
+- Slack App を作成し、SLACK_SIGNING_SECRET と SLACK_BOT_TOKEN を取得したものを環境変数に設定する。
+- OPENAI_API_KEY を取得し、環境変数に設定する。
+- npm install
 　 npm run build
 　 cd dist
 　 zip -r deploy_package.zip ./bundle.js ../node_modules
 　を順に実行する。
 　最後のコマンドにより、dist ディレクトリに deploy_package.zip が作成される。
-4 AWS Lambda に deploy_package.zip をアップロードする。
-5 AWS Lambda の設定で、環境変数を設定するともに、エンドポイントを作成する。
-6 AWS Lambda のランタイム設定を[bundle.handler]に変更する。
+- AWS Lambda に deploy_package.zip をアップロードする。
+- AWS Lambda の設定で、環境変数を設定するともに、エンドポイントを作成する。
+- AWS Lambda のランタイム設定を[bundle.handler]に変更する。
 　※デフォルトでは[index.handler]になっているが、作成したファイルが bundle.js なので、変更する。
-7 AWS Lambda の設定で、API Gateway の設定によってエンドポイントを作成する。
+- AWS Lambda の設定で、API Gateway の設定によってエンドポイントを作成する。
 エンドポイントの設定で、API のタイプを REST API にし、エンドポイントタイプをリージョンに設定する。
-8 Slack App の設定で、Event Subscriptions を有効にし、Request URL に AWS Lambda のエンドポイントを設定する。
-9 Slack App の設定で、Bot User を有効にする。
+- Slack App の設定で、Event Subscriptions を有効にし、Request URL に AWS Lambda のエンドポイントを設定する。
+- Slack App の設定で、Bot User を有効にする。
 Subscribe to bot events に app_mention を追加する。
 
 ## 今後の使い方
